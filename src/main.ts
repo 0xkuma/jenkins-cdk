@@ -1,13 +1,4 @@
-import { App, Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-
-export class MyStack extends Stack {
-  constructor(scope: Construct, id: string, props: StackProps = {}) {
-    super(scope, id, props);
-
-    // define resources here...
-  }
-}
+import { App, Stack, Tags } from 'aws-cdk-lib';
 
 // for development, use account/region from cdk cli
 const devEnv = {
@@ -16,8 +7,8 @@ const devEnv = {
 };
 
 const app = new App();
-
-new MyStack(app, 'jenkins-cdk-dev', { env: devEnv });
-// new MyStack(app, 'jenkins-cdk-prod', { env: prodEnv });
+const stack = new Stack(app, 'Stack', { env: devEnv });
 
 app.synth();
+Tags.of(app).add('ProjectName', 'jenkins-cdk');
+Tags.of(app).add('Environment', 'dev');
