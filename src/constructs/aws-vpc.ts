@@ -40,28 +40,17 @@ export class AwsVpc extends Construct {
   constructor(scope: Construct, id: string, props: AwsVpcProps) {
     super(scope, id);
 
-    const {
-      cidr,
-      defaultInstanceTenancy,
-      enableDnsHostnames,
-      enableDnsSupport,
-      maxAzs,
-      subnetConfiguration,
-      vpcName,
-    } = props;
+    let exp: { [key: string]: any } = {};
+    Object.entries(props).forEach(([key, value]) => {
+      if (value !== undefined) {
+        exp[key] = value;
+      }
+    });
 
     this.getPublicSubnetIds = () => {
       return this.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }).subnetIds;
     };
 
-    this.vpc = new ec2.Vpc(this, 'VPC', {
-      cidr: cidr,
-      defaultInstanceTenancy: defaultInstanceTenancy,
-      enableDnsHostnames: enableDnsHostnames,
-      enableDnsSupport: enableDnsSupport,
-      maxAzs: maxAzs,
-      subnetConfiguration: subnetConfiguration,
-      vpcName: vpcName,
-    });
+    this.vpc = new ec2.Vpc(this, 'VPC', exp);
   }
 }
