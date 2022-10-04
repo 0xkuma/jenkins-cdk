@@ -35,7 +35,6 @@ export interface AwsVpcProps {
 
 export class AwsVpc extends Construct {
   public readonly vpc: ec2.Vpc;
-  public readonly createPublicSubnet: (az: string, cidrBlock: string, index: string) => void;
   public readonly getPublicSubnetIds: () => string[];
 
   constructor(scope: Construct, id: string, props: AwsVpcProps) {
@@ -51,20 +50,8 @@ export class AwsVpc extends Construct {
       vpcName,
     } = props;
 
-    let publicSubnetIds: string[] = [];
-
-    this.createPublicSubnet = (cidrBlock: string, index: string) => {
-      const subnet = new ec2.PublicSubnet(this, `PublicSubnet-${index}`, {
-        availabilityZone: this.vpc.availabilityZones[Number(index)],
-        cidrBlock: cidrBlock,
-        vpcId: this.vpc.vpcId,
-        mapPublicIpOnLaunch: true,
-      });
-      publicSubnetIds.push(subnet.subnetId);
-    };
-
     this.getPublicSubnetIds = () => {
-      return publicSubnetIds;
+      return this.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }).subnetIds;
     };
 
     this.vpc = new ec2.Vpc(this, 'VPC', {
