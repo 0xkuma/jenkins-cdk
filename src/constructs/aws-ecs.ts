@@ -1,4 +1,5 @@
-import { Duration } from 'aws-cdk-lib';
+import fs from 'fs';
+import { Duration, Stack } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -100,6 +101,16 @@ export class AwsEcsCluster extends Construct {
     const task = new AwsEcsFargateTaskDefinition(this, 'TaskDefinition', {
       cpu: 256,
       memoryLimitMiB: 512,
+      taskRole: iam.Role.fromRoleArn(
+        this,
+        'TaskRole',
+        `arn:aws:iam::${Stack.of(this).account}:role/ecsTaskExecutionRole`,
+      ),
+      executionRole: iam.Role.fromRoleArn(
+        this,
+        'ExecutionRole',
+        `arn:aws:iam::${Stack.of(this).account}:role/ecsTaskExecutionRole`,
+      ),
     });
     task.fargateTaskDefinition.addContainer('Container', {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
@@ -108,6 +119,8 @@ export class AwsEcsCluster extends Construct {
     new AwsEcsFargateService(this, 'Service', {
       cluster: this.cluster,
       taskDefinition: task.fargateTaskDefinition,
+      assignPublicIp: true,
+      desiredCount: 0,
     });
   }
 }
