@@ -6,6 +6,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { AwsIamRole } from './aws-iam-role';
+import { AwsVpc } from './aws-vpc';
 
 export interface AwsEcsFargateTaskDefinitionProps {
   readonly cpu?: number;
@@ -47,7 +48,7 @@ export interface AwsEcsClusterProps {
   readonly defaultCloudMapNamespace?: ecs.CloudMapNamespaceOptions;
   readonly enableFargateCapacityProviders?: boolean;
   readonly executeCommandConfiguration?: ecs.ExecuteCommandConfiguration;
-  readonly vpc: ec2.IVpc;
+  readonly vpc: AwsVpc;
   readonly role: AwsIamRole;
 }
 
@@ -94,7 +95,9 @@ export class AwsEcsCluster extends Construct {
 
     let exp: { [key: string]: any } = {};
     Object.entries(props).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (key == 'vpc') {
+        exp[key] = value.vpc;
+      } else if (value !== undefined) {
         exp[key] = value;
       }
     });
@@ -116,10 +119,23 @@ export class AwsEcsCluster extends Construct {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
     });
 
+    const securityGroup = props.vpc.createSecurityGroup('ecs-fargate', {
+      securityGroupName: 'ecs-fargate',
+      description: 'ecs-fargate',
+      allowAllOutbound: true,
+    });
+    props.vpc.addIngressRule(securityGroup, {
+      peer: ec2.Peer.anyIpv4(),
+      connection: ec2.Port.tcp(80),
+      description: 'Allow HTTP access from the Internet',
+      remoteRule: false,
+    });
+
     new AwsEcsFargateService(this, 'Service', {
       cluster: this.cluster,
       taskDefinition: task.fargateTaskDefinition,
       assignPublicIp: true,
+      securityGroups: [securityGroup],
       desiredCount: 1,
     });
   }
