@@ -1,9 +1,11 @@
 import fs from 'fs';
-import { Duration, Stack } from 'aws-cdk-lib';
+import path from 'path';
+import { Duration } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
+import { AwsIamRole } from './aws-iam-role';
 
 export interface AwsEcsFargateTaskDefinitionProps {
   readonly cpu?: number;
@@ -46,6 +48,7 @@ export interface AwsEcsClusterProps {
   readonly enableFargateCapacityProviders?: boolean;
   readonly executeCommandConfiguration?: ecs.ExecuteCommandConfiguration;
   readonly vpc: ec2.IVpc;
+  readonly role: AwsIamRole;
 }
 
 export class AwsEcsFargateTaskDefinition extends Construct {
@@ -98,19 +101,16 @@ export class AwsEcsCluster extends Construct {
 
     this.cluster = new ecs.Cluster(this, 'Cluster', exp);
 
+    const file = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', 'role-policy/ecs-task-policy.json'), 'utf8'),
+    );
+    const ecsTaskExecutionRole = props.role.createRole(file.servicePrincipal, file.policyStatement);
+
     const task = new AwsEcsFargateTaskDefinition(this, 'TaskDefinition', {
       cpu: 256,
       memoryLimitMiB: 512,
-      taskRole: iam.Role.fromRoleArn(
-        this,
-        'TaskRole',
-        `arn:aws:iam::${Stack.of(this).account}:role/ecsTaskExecutionRole`,
-      ),
-      executionRole: iam.Role.fromRoleArn(
-        this,
-        'ExecutionRole',
-        `arn:aws:iam::${Stack.of(this).account}:role/ecsTaskExecutionRole`,
-      ),
+      taskRole: iam.Role.fromRoleArn(this, 'TaskRole', ecsTaskExecutionRole.roleArn),
+      executionRole: iam.Role.fromRoleArn(this, 'ExecutionRole', ecsTaskExecutionRole.roleArn),
     });
     task.fargateTaskDefinition.addContainer('Container', {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
@@ -120,7 +120,7 @@ export class AwsEcsCluster extends Construct {
       cluster: this.cluster,
       taskDefinition: task.fargateTaskDefinition,
       assignPublicIp: true,
-      desiredCount: 0,
+      desiredCount: 1,
     });
   }
 }

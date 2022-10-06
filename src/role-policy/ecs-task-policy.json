@@ -1,0 +1,15 @@
+{
+  "servicePrincipal": "ecs-tasks.amazonaws.com",
+  "policyStatement": {
+    "Effect": "Allow",
+    "Action": [
+      "ecr:GetAuthorizationToken",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ],
+    "Resource": ["*"]
+  }
+}
