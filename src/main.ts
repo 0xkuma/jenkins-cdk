@@ -1,6 +1,6 @@
 import { App, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { AwsVpc } from './constructs';
+import { AwsVpc, AwsEcsCluster, AwsIamRole } from './constructs';
 
 // for development, use account/region from cdk cli
 const devEnv = {
@@ -30,6 +30,14 @@ const aws_vpc = new AwsVpc(stack, 'AwsVpc', {
   maxAzs: 3,
   subnetConfiguration: subnetConfiguration,
   vpcName: `${projectName}-vpc`,
+});
+
+const aws_iam_role = new AwsIamRole(stack, 'AwsIamRole');
+
+new AwsEcsCluster(stack, 'AwsEcsCluster', {
+  clusterName: `${projectName}-cluster`,
+  vpc: aws_vpc.vpc,
+  role: aws_iam_role,
 });
 
 app.synth();
