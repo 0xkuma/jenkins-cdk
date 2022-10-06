@@ -36,7 +36,7 @@ const aws_iam_role = new AwsIamRole(stack, 'AwsIamRole');
 
 new AwsEcsCluster(stack, 'AwsEcsCluster', {
   clusterName: `${projectName}-cluster`,
-  vpc: aws_vpc.vpc,
+  vpc: aws_vpc,
   role: aws_iam_role,
 });
 
