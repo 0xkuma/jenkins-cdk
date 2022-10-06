@@ -1,6 +1,6 @@
 const { awscdk } = require('projen');
 const project = new awscdk.AwsCdkTypeScriptApp({
-  cdkVersion: '2.44.0',
+  cdkVersion: '2.45.0',
   defaultReleaseBranch: 'main',
   name: 'jenkins-cdk',
   workflowGitIdentity: false,
