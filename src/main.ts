@@ -15,6 +15,19 @@ const stack = new Stack(app, projectName, { env: devEnv });
 Tags.of(stack).add('ProjectName', projectName);
 Tags.of(stack).add('Environment', 'dev');
 
+// Check all the environment variables are set
+const requiredEnvVars = [
+  'DOMAIN_NAME',
+  'NAMECHEAP_API_USERNAME',
+  'NAMECHEAP_API_TOKEN',
+  'NAMECHEAP_API_IP',
+];
+requiredEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    throw new Error(`Environment variable ${envVar} is not set`);
+  }
+});
+
 const subnetConfiguration = [
   {
     cidrMask: 24,
