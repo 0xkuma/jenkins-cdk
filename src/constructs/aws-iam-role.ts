@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 
 export class AwsIamRole extends Construct {
   public readonly createRole: (
+    service: string,
     servicePrincipal: string,
     policyStatement: {
       Effect: iam.Effect;
@@ -15,6 +16,7 @@ export class AwsIamRole extends Construct {
     super(scope, id);
 
     this.createRole = (
+      service: string,
       servicePrincipal: string,
       policyStatement: {
         Effect: iam.Effect;
@@ -22,7 +24,7 @@ export class AwsIamRole extends Construct {
         Resource: string[];
       },
     ) => {
-      const role = new iam.Role(this, 'Role', {
+      const role = new iam.Role(this, `${service}-role`, {
         assumedBy: new iam.ServicePrincipal(servicePrincipal),
       });
       role.addToPolicy(
