@@ -1,6 +1,8 @@
 import { App, Stack, Tags } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as dotenv from 'dotenv';
 import { AwsVpc, AwsEcsCluster, AwsIamRole } from './constructs';
+dotenv.config();
 
 // for development, use account/region from cdk cli
 const devEnv = {
