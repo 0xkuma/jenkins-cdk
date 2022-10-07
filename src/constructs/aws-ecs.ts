@@ -107,7 +107,11 @@ export class AwsEcsCluster extends Construct {
     const file = JSON.parse(
       fs.readFileSync(path.join(__dirname, '..', 'role-policy/ecs-task-policy.json'), 'utf8'),
     );
-    const ecsTaskExecutionRole = props.role.createRole(file.servicePrincipal, file.policyStatement);
+    const ecsTaskExecutionRole = props.role.createRole(
+      'ecs-fargate',
+      file.servicePrincipal,
+      file.policyStatement,
+    );
 
     const task = new AwsEcsFargateTaskDefinition(this, 'TaskDefinition', {
       cpu: 256,
