@@ -28,7 +28,7 @@ export class AwsVpc extends Construct {
   public readonly vpc: ec2.Vpc;
   public readonly getPublicSubnetIds: () => string[];
   public readonly createSecurityGroup: (
-    type: string,
+    service: string,
     props: AwsVpcSecurityGroupProps,
   ) => ec2.SecurityGroup;
   public readonly addIngressRule: (
@@ -52,7 +52,7 @@ export class AwsVpc extends Construct {
       return this.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }).subnetIds;
     };
 
-    this.createSecurityGroup = (type: string, funcProps: AwsVpcSecurityGroupProps) => {
+    this.createSecurityGroup = (service: string, funcProps: AwsVpcSecurityGroupProps) => {
       let funcExp: { [key: string]: any } = {};
       Object.entries(funcProps).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -61,7 +61,7 @@ export class AwsVpc extends Construct {
       });
       return new ec2.SecurityGroup(
         this,
-        `${type}-SecurityGroup`,
+        `${service}-SecurityGroup`,
         Object.assign(funcExp, { vpc: this.vpc }),
       );
     };
