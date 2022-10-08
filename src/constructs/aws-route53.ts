@@ -1,4 +1,4 @@
-import { Duration } from 'aws-cdk-lib';
+import { Duration, Fn } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
@@ -47,6 +47,15 @@ export class AwsRoute53 extends Construct {
     });
 
     this.hostedZone = new route53.PublicHostedZone(this, 'HostedZone', exp);
+    if (this.hostedZone.hostedZoneNameServers) {
+      props.ssm.createParameterStore(
+        'route53',
+        '/jenkins-cdk/hostedZoneNameServers',
+        Fn.join(',', this.hostedZone.hostedZoneNameServers),
+      );
+    } else {
+      throw new Error('hostedZoneNameServers is undefined');
+    }
 
     this.addRecordSet = (service: string, funcProps: AwsRoute53RecordSetProps, index: string) => {
       let funcExp: { [key: string]: any } = {};
