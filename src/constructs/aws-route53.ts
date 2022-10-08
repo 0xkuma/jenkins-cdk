@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import { Duration, Fn } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
@@ -30,6 +31,7 @@ export class AwsRoute53 extends Construct {
     props: AwsRoute53RecordSetProps,
     index: string,
   ) => void;
+  public readonly updateNamecheapDNS: () => void;
 
   constructor(scope: Construct, id: string, props: AwsRoute53HostedZoneProps) {
     super(scope, id);
@@ -72,6 +74,24 @@ export class AwsRoute53 extends Construct {
         recordName: funcExp.recordName,
         target: funcExp.target,
       });
+    };
+
+    this.updateNamecheapDNS = () => {
+      console.log('Updating Namecheap DNS...');
+      const namecheapApiCredentials = {
+        username: process.env.NAMECHEAP_API_USERNAME,
+        token: process.env.NAMECHEAP_API_TOKEN,
+        ip: process.env.NAMECHEAP_API_IP,
+        sld: process.env.DOMAIN_NAME?.split('.')[0],
+        tld: process.env.DOMAIN_NAME?.split('.')[1],
+      };
+      const hostedZoneNameServers = props.ssm.getParemeterStore(
+        '/jenkins-cdk/hostedZoneNameServers',
+      );
+
+      execSync(
+        `curl --location --request GET 'https://api.namecheap.com/xml.response?ApiUser=${namecheapApiCredentials.username}&ApiKey=${namecheapApiCredentials.token}&UserName=${namecheapApiCredentials.username}&Command=namecheap.domains.dns.setCustom&ClientIp=${namecheapApiCredentials.ip}&SLD=${namecheapApiCredentials.sld}&TLD=${namecheapApiCredentials.tld}&NameServers=${hostedZoneNameServers}'`,
+      );
     };
   }
 }
