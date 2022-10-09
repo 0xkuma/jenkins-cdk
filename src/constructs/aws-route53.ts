@@ -85,7 +85,8 @@ export class AwsRoute53 extends Construct {
         sld: process.env.DOMAIN_NAME?.split('.')[0],
         tld: process.env.DOMAIN_NAME?.split('.')[1],
       };
-      const hostedZoneNameServers = props.ssm.getParemeterStore(
+      const hostedZoneNameServers = props.ssm.getParameterStoreValue(
+        'lookup',
         '/jenkins-cdk/hostedZoneNameServers',
       );
 

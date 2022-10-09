@@ -7,7 +7,10 @@ export class AwsSsm extends Construct {
     parameterName: string,
     parameterValue: string,
   ) => ssm.StringParameter;
-  public readonly getParemeterStore: (parameterName: string) => string;
+  public readonly getParameterStoreValue: (
+    methods: 'lookup' | 'stringParameter',
+    parameterName: string,
+  ) => string;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
@@ -23,9 +26,18 @@ export class AwsSsm extends Construct {
       });
     };
 
-    this.getParemeterStore = (parameterName: string) => {
-      return ssm.StringParameter.fromStringParameterName(this, 'ParameterStore', parameterName)
-        .stringValue;
+    this.getParameterStoreValue = (
+      methods: 'lookup' | 'stringParameter',
+      parameterName: string,
+    ) => {
+      switch (methods) {
+        case 'lookup':
+          return ssm.StringParameter.valueFromLookup(this, parameterName);
+        case 'stringParameter':
+          return ssm.StringParameter.valueForStringParameter(this, parameterName);
+        default:
+          throw new Error('methods is undefined');
+      }
     };
   }
 }
