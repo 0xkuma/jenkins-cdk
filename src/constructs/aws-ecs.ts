@@ -73,18 +73,17 @@ export class AwsEcsFargateService extends Construct {
     super(scope, id);
 
     let exp: {
-      cluster: ecs.ICluster;
-      taskDefinition: ecs.FargateTaskDefinition;
       [key: string]: any;
-    } = { cluster: props.cluster, taskDefinition: props.taskDefinition };
-
+    } = {};
     Object.entries(props).forEach(([key, value]) => {
-      if (key !== 'cluster' && key !== 'taskDefinition') {
-        exp[key] = value;
-      }
+      exp[key] = value;
     });
 
-    this.service = new ecs.FargateService(this, 'Service', exp);
+    this.service = new ecs.FargateService(this, 'Service', {
+      ...exp,
+      cluster: exp.cluster,
+      taskDefinition: exp.taskDefinition,
+    });
   }
 }
 
@@ -95,14 +94,13 @@ export class AwsEcsCluster extends Construct {
 
     let exp: { [key: string]: any } = {};
     Object.entries(props).forEach(([key, value]) => {
-      if (key == 'vpc') {
-        exp[key] = value.vpc;
-      } else if (value !== undefined) {
-        exp[key] = value;
-      }
+      exp[key] = value;
     });
 
-    this.cluster = new ecs.Cluster(this, 'Cluster', exp);
+    this.cluster = new ecs.Cluster(this, 'Cluster', {
+      ...exp,
+      vpc: exp.vpc.vpc,
+    });
 
     const file = JSON.parse(
       fs.readFileSync(path.join(__dirname, '..', 'role-policy/ecs-task-policy.json'), 'utf8'),
