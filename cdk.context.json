@@ -6,5 +6,6 @@
     "us-east-1d",
     "us-east-1e",
     "us-east-1f"
-  ]
+  ],
+  "ssm:account=097759201858:parameterName=/jenkins-cdk/hostedZoneNameServers:region=us-east-1": "ns-533.awsdns-02.net,ns-408.awsdns-51.com,ns-1070.awsdns-05.org,ns-1966.awsdns-53.co.uk"
 }
