@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { Duration, Fn } from 'aws-cdk-lib';
+import { Duration, Fn, Stack } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
@@ -36,6 +36,8 @@ export class AwsRoute53 extends Construct {
   constructor(scope: Construct, id: string, props: AwsRoute53HostedZoneProps) {
     super(scope, id);
 
+    const stackName = Stack.of(this).stackName;
+
     let exp: {
       zoneName: string;
       [key: string]: any;
@@ -52,7 +54,7 @@ export class AwsRoute53 extends Construct {
     if (this.hostedZone.hostedZoneNameServers) {
       props.ssm.createParameterStore(
         'route53',
-        '/jenkins-cdk/hostedZoneNameServers',
+        `/${stackName}/hostedZoneNameServers`,
         Fn.join(',', this.hostedZone.hostedZoneNameServers),
       );
     } else {
@@ -87,7 +89,7 @@ export class AwsRoute53 extends Construct {
       };
       const hostedZoneNameServers = props.ssm.getParameterStoreValue(
         'lookup',
-        '/jenkins-cdk/hostedZoneNameServers',
+        `/${stackName}/hostedZoneNameServers`,
       );
 
       execSync(
