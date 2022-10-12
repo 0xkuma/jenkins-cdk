@@ -65,6 +65,7 @@ new AwsEcsCluster(stack, 'AwsEcsCluster', {
   clusterName: `${projectName}-cluster`,
   vpc: aws_vpc,
   role: aws_iam_role,
+  securityGroupsPath: './security-group/ecs-fargate.json',
 });
 
 app.synth();

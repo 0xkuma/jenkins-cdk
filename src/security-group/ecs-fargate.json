@@ -1,0 +1,18 @@
+{
+  "ingress": {
+    "80": {
+      "peer": "any",
+      "protocol": "tcp",
+      "description": "http",
+      "reomteRule": false
+    },
+    "443": {
+      "peer": "any",
+      "protocol": "tcp",
+      "description": "https",
+      "reomteRule": false
+    }
+  },
+  "egress": {},
+  "allowAllOutbound": true
+}
