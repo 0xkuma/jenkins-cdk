@@ -9,12 +9,23 @@ import { AwsIamRole } from './aws-iam-role';
 import { AwsVpc } from './aws-vpc';
 
 export interface SecurityGroupRuleProps {
-  [key: string]: {
-    peer: string;
-    protocal: 'tcp' | 'udp' | 'icmp' | 'all';
-    description: string;
-    remoteRule?: boolean;
+  ingress: {
+    [key: string]: {
+      peer: string;
+      protocol: 'tcp' | 'udp' | 'icmp' | 'all';
+      description: string;
+      remoteRule: boolean;
+    };
   };
+  egress: {
+    [key: string]: {
+      peer: string;
+      protocol: 'tcp' | 'udp' | 'icmp' | 'all';
+      description: string;
+      remoteRule: boolean;
+    };
+  };
+  allowAllOutbound: boolean;
 }
 
 export interface AwsEcsFargateTaskDefinitionProps {
@@ -131,7 +142,7 @@ export class AwsEcsCluster extends Construct {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
     });
 
-    const securityGroupRule = JSON.parse(
+    const securityGroupRule: SecurityGroupRuleProps = JSON.parse(
       fs.readFileSync(path.join(__dirname, '..', props.securityGroupsPath), 'utf8'),
     );
     const securityGroup = props.vpc.createSecurityGroup('ecs-fargate', {
@@ -140,17 +151,16 @@ export class AwsEcsCluster extends Construct {
       allowAllOutbound: securityGroupRule.allowAllOutbound,
     });
     if (securityGroupRule.allowAllOutbound) {
-      for (let rule = 0; rule < securityGroupRule.ingress.length; rule++) {
+      Object.entries(securityGroupRule.ingress).forEach(([key, value]) => {
+        const port = parseInt(key);
+        const { protocol, description, remoteRule } = value;
         props.vpc.addIngressRule(securityGroup, {
           peer: ec2.Peer.anyIpv4(),
-          connection:
-            securityGroupRule.ingress[rule] == 'tcp'
-              ? ec2.Port.tcp(securityGroupRule.ingress[rule])
-              : ec2.Port.udp(securityGroupRule.ingress[rule]),
-          description: securityGroupRule.ingress[rule].description,
-          remoteRule: securityGroupRule.ingress[rule].remoteRule,
+          connection: protocol == 'tcp' ? ec2.Port.tcp(port) : ec2.Port.udp(port),
+          description: description,
+          remoteRule: remoteRule,
         });
-      }
+      });
     } else {
     }
 
