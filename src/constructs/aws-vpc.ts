@@ -1,11 +1,13 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
-export interface AwsVpcSecurityGroupIngressRuleProps {
-  readonly peer: ec2.IPeer;
-  readonly connection: ec2.Port;
-  readonly description: string;
-  readonly remoteRule: boolean;
+export interface AwsVpcSecurityGroupRuleProps {
+  [key: string]: {
+    peer: string;
+    protocol: 'tcp' | 'udp' | 'icmp' | 'all';
+    description: string;
+    remoteRule: boolean;
+  };
 }
 
 export interface AwsVpcSecurityGroupProps {
@@ -33,7 +35,11 @@ export class AwsVpc extends Construct {
   ) => ec2.SecurityGroup;
   public readonly addIngressRule: (
     securityGroup: ec2.SecurityGroup,
-    props: AwsVpcSecurityGroupIngressRuleProps,
+    props: AwsVpcSecurityGroupRuleProps,
+  ) => void;
+  public readonly addEgressRule: (
+    securityGroup: ec2.SecurityGroup,
+    props: AwsVpcSecurityGroupRuleProps,
   ) => void;
 
   constructor(scope: Construct, id: string, props: AwsVpcProps) {
@@ -66,22 +72,42 @@ export class AwsVpc extends Construct {
       );
     };
 
+    const peerFactory = (peer: string) => {
+      if (peer === 'self') {
+        return ec2.Peer.ipv4(this.vpc.vpcCidrBlock);
+      } else if (peer === 'any') {
+        return ec2.Peer.anyIpv4();
+      } else {
+        return ec2.Peer.ipv4(peer);
+      }
+    };
+
     this.addIngressRule = (
       securityGroup: ec2.SecurityGroup,
-      funcProps: AwsVpcSecurityGroupIngressRuleProps,
+      funcProps: AwsVpcSecurityGroupRuleProps,
     ) => {
-      let funcExp: { [key: string]: any } = {};
       Object.entries(funcProps).forEach(([key, value]) => {
-        if (value !== undefined) {
-          funcExp[key] = value;
-        }
+        securityGroup.addIngressRule(
+          peerFactory(value.peer),
+          value.protocol == 'tcp' ? ec2.Port.tcp(Number(key)) : ec2.Port.udp(Number(key)),
+          value.description,
+          value.remoteRule,
+        );
       });
-      securityGroup.addIngressRule(
-        funcExp.peer,
-        funcExp.connection,
-        funcExp.description,
-        funcExp.remoteRule,
-      );
+    };
+
+    this.addEgressRule = (
+      securityGroup: ec2.SecurityGroup,
+      funcProps: AwsVpcSecurityGroupRuleProps,
+    ) => {
+      Object.entries(funcProps).forEach(([key, value]) => {
+        securityGroup.addEgressRule(
+          peerFactory(value.peer),
+          value.protocol == 'tcp' ? ec2.Port.tcp(Number(key)) : ec2.Port.udp(Number(key)),
+          value.description,
+          value.remoteRule,
+        );
+      });
     };
   }
 }
