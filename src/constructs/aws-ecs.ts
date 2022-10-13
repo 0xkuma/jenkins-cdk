@@ -150,18 +150,9 @@ export class AwsEcsCluster extends Construct {
       description: 'ecs-fargate',
       allowAllOutbound: securityGroupRule.allowAllOutbound,
     });
+    props.vpc.addIngressRule(securityGroup, securityGroupRule.ingress);
     if (securityGroupRule.allowAllOutbound) {
-      Object.entries(securityGroupRule.ingress).forEach(([key, value]) => {
-        const port = parseInt(key);
-        const { protocol, description, remoteRule } = value;
-        props.vpc.addIngressRule(securityGroup, {
-          peer: ec2.Peer.anyIpv4(),
-          connection: protocol == 'tcp' ? ec2.Port.tcp(port) : ec2.Port.udp(port),
-          description: description,
-          remoteRule: remoteRule,
-        });
-      });
-    } else {
+      props.vpc.addEgressRule(securityGroup, securityGroupRule.egress);
     }
 
     new AwsEcsFargateService(this, 'Service', {
