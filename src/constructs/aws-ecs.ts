@@ -7,26 +7,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { AwsIamRole } from './aws-iam-role';
 import { AwsVpc } from './aws-vpc';
-
-export interface SecurityGroupRuleProps {
-  ingress: {
-    [key: string]: {
-      peer: string;
-      protocol: 'tcp' | 'udp' | 'icmp' | 'all';
-      description: string;
-      remoteRule: boolean;
-    };
-  };
-  egress: {
-    [key: string]: {
-      peer: string;
-      protocol: 'tcp' | 'udp' | 'icmp' | 'all';
-      description: string;
-      remoteRule: boolean;
-    };
-  };
-  allowAllOutbound: boolean;
-}
+import { createSecurityGroup } from './lib/security-group-handler';
 
 export interface AwsEcsFargateTaskDefinitionProps {
   readonly cpu?: number;
@@ -142,18 +123,7 @@ export class AwsEcsCluster extends Construct {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
     });
 
-    const securityGroupRule: SecurityGroupRuleProps = JSON.parse(
-      fs.readFileSync(path.join(__dirname, '..', props.securityGroupsPath), 'utf8'),
-    );
-    const securityGroup = props.vpc.createSecurityGroup('ecs-fargate', {
-      securityGroupName: 'ecs-fargate',
-      description: 'ecs-fargate',
-      allowAllOutbound: securityGroupRule.allowAllOutbound,
-    });
-    props.vpc.addIngressRule(securityGroup, securityGroupRule.ingress);
-    if (securityGroupRule.allowAllOutbound) {
-      props.vpc.addEgressRule(securityGroup, securityGroupRule.egress);
-    }
+    const securityGroup = createSecurityGroup(props.vpc, props.securityGroupsPath);
 
     new AwsEcsFargateService(this, 'Service', {
       cluster: this.cluster,
