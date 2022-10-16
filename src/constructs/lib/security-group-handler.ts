@@ -23,18 +23,26 @@ export interface SecurityGroupRuleProps {
   allowAllOutbound: boolean;
 }
 
-export const createSecurityGroup = (vpc: AwsVpc, filePath: string): ec2.ISecurityGroup => {
+export interface SecurityGroupHandlerProps {
+  service: string;
+  vpc: AwsVpc;
+  filePath: string;
+  securityGroupName: string;
+  description: string;
+}
+
+export const createSecurityGroup = (props: SecurityGroupHandlerProps): ec2.ISecurityGroup => {
   const securityGroupRule: SecurityGroupRuleProps = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '../..', filePath), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '../..', props.filePath), 'utf8'),
   );
-  const securityGroup = vpc.createSecurityGroup('ecs-fargate', {
-    securityGroupName: 'ecs-fargate',
-    description: 'ecs-fargate',
+  const securityGroup = props.vpc.createSecurityGroup(props.service, {
+    securityGroupName: props.securityGroupName,
+    description: props.description,
     allowAllOutbound: securityGroupRule.allowAllOutbound,
   });
-  vpc.addIngressRule(securityGroup, securityGroupRule.ingress);
+  props.vpc.addIngressRule(securityGroup, securityGroupRule.ingress);
   if (securityGroupRule.allowAllOutbound) {
-    vpc.addEgressRule(securityGroup, securityGroupRule.egress);
+    props.vpc.addEgressRule(securityGroup, securityGroupRule.egress);
   }
   return securityGroup;
 };
