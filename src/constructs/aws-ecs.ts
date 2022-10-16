@@ -51,7 +51,7 @@ export interface AwsEcsClusterProps {
   readonly executeCommandConfiguration?: ecs.ExecuteCommandConfiguration;
   readonly vpc: AwsVpc;
   readonly role: AwsIamRole;
-  readonly securityGroupsPath: string;
+  readonly securityGroupsFilePath: string;
 }
 
 export class AwsEcsFargateTaskDefinition extends Construct {
@@ -123,7 +123,13 @@ export class AwsEcsCluster extends Construct {
       image: ecs.ContainerImage.fromRegistry('nginx:latest'),
     });
 
-    const securityGroup = createSecurityGroup(props.vpc, props.securityGroupsPath);
+    const securityGroup = createSecurityGroup({
+      service: 'ecs-fargate',
+      vpc: props.vpc,
+      filePath: props.securityGroupsFilePath,
+      securityGroupName: 'ecs-fargate',
+      description: 'ecs-fargate',
+    });
 
     new AwsEcsFargateService(this, 'Service', {
       cluster: this.cluster,
