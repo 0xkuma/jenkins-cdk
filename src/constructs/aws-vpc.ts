@@ -45,6 +45,8 @@ export class AwsVpc extends Construct {
   constructor(scope: Construct, id: string, props: AwsVpcProps) {
     super(scope, id);
 
+    let index: { [key: string]: number } = {};
+
     let exp: { [key: string]: any } = {};
     Object.entries(props).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -65,11 +67,13 @@ export class AwsVpc extends Construct {
           funcExp[key] = value;
         }
       });
-      return new ec2.SecurityGroup(
+      index[service] = index[service] ? index[service] + 1 : 1;
+      const securityGroup = new ec2.SecurityGroup(
         this,
-        `${service}-SecurityGroup`,
+        `${service}-SecurityGroup-${index[service]}`,
         Object.assign(funcExp, { vpc: this.vpc }),
       );
+      return securityGroup;
     };
 
     const peerFactory = (peer: string) => {
