@@ -5,9 +5,33 @@ import { Construct } from 'constructs';
 import { AwsVpc } from './aws-vpc';
 import { createSecurityGroup } from './lib/security-group-handler';
 
-export interface AwsElbListenerProps {}
+export interface AWSElbTargetGroupProps {
+  readonly deregistrationDelay?: Duration;
+  readonly healthCheck?: elbv2.HealthCheck;
+  readonly loadBalancingAlgorithmType?: elbv2.TargetGroupLoadBalancingAlgorithmType;
+  readonly port?: number;
+  readonly protocol?: elbv2.ApplicationProtocol;
+  readonly protocolVersion?: elbv2.ApplicationProtocolVersion;
+  readonly slowStart?: Duration;
+  readonly stickinessCookieDuration?: Duration;
+  readonly stickinessCookieName?: string;
+  readonly targetGroupName?: string;
+  readonly targetType?: elbv2.TargetType;
+  readonly targets?: elbv2.IApplicationLoadBalancerTarget[];
+  readonly vpc: AwsVpc;
+}
 
-export interface AwsElbProps {
+export interface AwsElbListenerProps {
+  readonly certificates?: elbv2.IListenerCertificate[];
+  readonly defaultAction?: elbv2.ListenerAction;
+  readonly defaultTargetGroups?: elbv2.ITargetGroup[];
+  readonly open?: boolean;
+  readonly port?: number;
+  readonly protocol?: elbv2.ApplicationProtocol;
+  readonly sslPolicy?: elbv2.SslPolicy;
+}
+
+export interface AwsAlbProps {
   readonly vpc: AwsVpc;
   readonly deletionProtection?: boolean;
   readonly http2Enabled?: boolean;
@@ -19,31 +43,41 @@ export interface AwsElbProps {
   readonly securityGroupsFilePath: string;
 }
 
+export interface AwsElbProps {
+  readonly alb: AwsAlbProps;
+  readonly listener: AwsElbListenerProps;
+  readonly targetGroup: AWSElbTargetGroupProps;
+}
+
 export class AwsElb extends Construct {
   public readonly elb: elbv2.ApplicationLoadBalancer;
 
   constructor(scope: Construct, id: string, props: AwsElbProps) {
     super(scope, id);
 
-    let exp: { [key: string]: any } = {};
-    Object.entries(props).forEach(([key, value]) => {
+    let lbExp: { [key: string]: any } = {};
+    Object.entries(props.alb).forEach(([key, value]) => {
       if (value !== undefined) {
-        exp[key] = value;
+        lbExp[key] = value;
       }
     });
 
     const securityGroup = createSecurityGroup({
       service: 'elb',
-      vpc: props.vpc,
-      filePath: props.securityGroupsFilePath,
+      vpc: lbExp.vpc,
+      filePath: lbExp.securityGroupsFilePath,
       securityGroupName: 'elb',
       description: 'elb security group',
     });
 
     this.elb = new elbv2.ApplicationLoadBalancer(this, 'Elb', {
-      ...exp,
-      vpc: exp.vpc.vpc,
+      ...lbExp,
+      vpc: lbExp.vpc,
       securityGroup,
     });
+
+    const listener = this.elb.addListener('Listener', {});
+
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {});
   }
 }
