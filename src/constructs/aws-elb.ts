@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { Duration } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -16,7 +18,7 @@ export interface AWSElbTargetGroupProps {
   readonly stickinessCookieDuration?: Duration;
   readonly stickinessCookieName?: string;
   readonly targetGroupName?: string;
-  readonly targetType?: elbv2.TargetType;
+  readonly targetType?: elbv2.TargetType | 'asg';
   readonly targets?: elbv2.IApplicationLoadBalancerTarget[];
   readonly vpc: AwsVpc;
 }
@@ -29,6 +31,14 @@ export interface AwsElbListenerProps {
   readonly port?: number;
   readonly protocol?: elbv2.ApplicationProtocol;
   readonly sslPolicy?: elbv2.SslPolicy;
+  readonly filePath: string;
+}
+
+export interface AwsElbListenerFileProps {
+  [key: string]: {
+    targetType: string;
+    port: number;
+  };
 }
 
 export interface AwsAlbProps {
@@ -76,6 +86,9 @@ export class AwsElb extends Construct {
       securityGroup,
     });
 
+    const listenerFile = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', props.listener.filePath), 'utf8'),
+    );
     const listener = this.elb.addListener('Listener', {});
 
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {});

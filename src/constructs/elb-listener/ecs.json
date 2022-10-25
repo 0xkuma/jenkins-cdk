@@ -1,0 +1,6 @@
+{
+  "80": {
+    "targetType": "INSTANCE",
+    "targetPort": 80
+  }
+}
