@@ -31,7 +31,13 @@ export interface SecurityGroupHandlerProps {
   description: string;
 }
 
+let securityGroupList: { [key: string]: ec2.SecurityGroup } = {};
+
 export const createSecurityGroup = (props: SecurityGroupHandlerProps): ec2.ISecurityGroup => {
+  if (securityGroupList[props.service]) {
+    throw new Error('Security group already exists');
+  }
+
   const securityGroupRule: SecurityGroupRuleProps = JSON.parse(
     fs.readFileSync(path.join(__dirname, '../..', props.filePath), 'utf8'),
   );
@@ -44,5 +50,18 @@ export const createSecurityGroup = (props: SecurityGroupHandlerProps): ec2.ISecu
   if (securityGroupRule.allowAllOutbound) {
     props.vpc.addEgressRule(securityGroup, securityGroupRule.egress);
   }
+
+  if (!securityGroupList[props.service]) {
+    securityGroupList[props.service] = securityGroup;
+  }
+
   return securityGroup;
+};
+
+export const getSecurityGroup = (service: string): ec2.ISecurityGroup => {
+  if (!securityGroupList[service]) {
+    throw new Error('Security group does not exist');
+  }
+
+  return securityGroupList[service];
 };
