@@ -4,9 +4,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { AwsVpc } from './aws-vpc';
+import { createSecurityGroup } from './lib/security-group-handler';
 
 export interface AwsAutoscalingProps {
   readonly vpc: AwsVpc;
+  readonly securityGroupsFilePath: string;
   readonly allowAllOutbound?: boolean;
   readonly associatePublicIpAddress?: boolean;
   readonly blockDevices?: asg.BlockDevice[];
@@ -30,7 +32,6 @@ export interface AwsAutoscalingProps {
   readonly notifications?: asg.NotificationConfiguration[];
   readonly requireIMDSv2?: boolean;
   readonly role?: iam.IRole;
-  readonly securityGroup?: ec2.ISecurityGroup;
   readonly signals?: asg.Signals;
   readonly spotPrice?: string;
   readonly terminationPolicies?: asg.TerminationPolicy[];
@@ -50,9 +51,18 @@ export class AwsAutoscaling extends Construct {
       }
     });
 
+    const securityGroup = createSecurityGroup({
+      service: 'autoscaling',
+      vpc: exp.vpc,
+      filePath: exp.securityGroupsFilePath,
+      securityGroupName: 'autoscaling',
+      description: 'autoscaling security group',
+    });
+
     new asg.AutoScalingGroup(this, 'AutoScalingGroup', {
       ...exp,
       vpc: exp.vpc,
+      securityGroup: securityGroup,
     });
   }
 }
