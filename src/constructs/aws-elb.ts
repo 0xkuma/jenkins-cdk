@@ -18,7 +18,7 @@ export interface AWSElbTargetGroupProps {
   readonly stickinessCookieDuration?: Duration;
   readonly stickinessCookieName?: string;
   readonly targetGroupName?: string;
-  readonly targetType?: elbv2.TargetType | 'asg';
+  readonly targetType?: elbv2.TargetType;
   readonly targets?: elbv2.IApplicationLoadBalancerTarget[];
   readonly vpc: AwsVpc;
 }
@@ -86,11 +86,30 @@ export class AwsElb extends Construct {
       securityGroup,
     });
 
-    const listenerFile = JSON.parse(
+    const listenerFile: AwsElbListenerFileProps = JSON.parse(
       fs.readFileSync(path.join(__dirname, '..', props.listener.filePath), 'utf8'),
     );
-    const listener = this.elb.addListener('Listener', {});
 
-    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {});
+    Object.entries(listenerFile).forEach(([key, value]) => {
+      const listener = this.elb.addListener(`${key}-Listener`, {
+        port: value.port,
+      });
+      switch (value.targetType) {
+        case 'INSTANCE':
+          let tgExp: { [key: string]: any } = {};
+          Object.entries(props.targetGroup).forEach(([tgKey, tgValue]) => {
+            if (tgValue !== undefined) {
+              tgExp[tgKey] = tgValue;
+            }
+          });
+          const targetGroup = new elbv2.ApplicationTargetGroup(this, `${key}-TargetGroup`, {
+            ...tgExp,
+          });
+          listener.addTargetGroups(`${key}-AddTargetGroup`, {
+            targetGroups: [targetGroup],
+          });
+          break;
+      }
+    });
   }
 }
